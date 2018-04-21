@@ -29,11 +29,14 @@ class Player(object):
         """
         # set up a new board
         self.board = Board()
-        self.phase = PLACING_PHASE  # First phase: Placing phase
+        self.team = BLACK
         if colour == 'white':
             self.team = WHITE
-        else:
+        elif colour == 'black':
             self.team = BLACK
+        else:
+            raise ValueError("colour must be 'white' or 'black'")
+        self.enemy_team = Board.get_opponent_team(self.team)
 
     def action(self, turns):
         """
@@ -43,11 +46,18 @@ class Player(object):
             since start of current game phase
         :return: next action
         """
+        assert turns == self.board.turn_count
         # gets list of all actions
-        # moves = get_all_actions(self.team)
-        # chooses a random one and returns it
+        actions = self.board.get_all_actions(self.team)
+        # print(self.team, "can choose one of ", actions)
+        # TODO chooses a random one and returns it
+        our_action = None
+        if len(actions) > 0:
+            our_action = actions[0]
+        # Update the board with our action
+        self.board.do_action(our_action, self.team, test=True)
 
-        pass
+        return our_action
 
     def update(self, action):
         """
@@ -57,6 +67,7 @@ class Player(object):
         :return: Nothing
         """
         # Update our board
+        self.board.do_action(action, self.enemy_team)
 
 
 class Board(object):
@@ -66,13 +77,13 @@ class Board(object):
         for i in range(BOARD_SIZE):
             self.board.append([None] * BOARD_SIZE)
 
-        self.pieces = []
+        self.pieces = [None] * 24
         # start in placing phase
         self.phase = PLACING_PHASE
         # number of turns taken place since start of current game phase
         self.turn_count = 0
 
-    def do_action(self, action, team):
+    def do_action(self, action, team, test=False):
         """
         Direct way to do the action
 
@@ -81,8 +92,10 @@ class Board(object):
         :return:
         """
         # TODO consider validation
+        if action is None:  # forfeit turn. Turn count still increases
+            pass
         # Placing phase: (x, y)
-        if self.phase == PLACING_PHASE:
+        elif self.phase == PLACING_PHASE:
             self.place_piece(action, team)
         else:
             # Move phase:    ((a, b), (c, d))
@@ -96,6 +109,10 @@ class Board(object):
             self.advance_phase()
         elif self.phase == SHRINK1_PHASE and self.turn_count == 64:
             self.advance_phase()
+        # TODO printing of board and action
+        if test:
+            print(team, 'action', action)
+            self.print_board()
 
     def place_piece(self, position, team):
         """
@@ -111,12 +128,15 @@ class Board(object):
         # TODO: consider adding/removing validation of this move e.g. in bounds
         assert self.in_bounds(position)
         assert self.get_piece_at_pos(position) is None
-        self.board[c][r] = len(self.pieces)  # store the index
+
         new_piece = {
             "pos": position,
             "team": team
         }
-        self.pieces.append(new_piece)
+        # find an empty position in the list to place the piece
+        new_piece_index = self.pieces.index(None)
+        self.pieces[new_piece_index] = new_piece
+        self.board[c][r] = new_piece_index  # store the index on the board
         # check if any pieces were taken
         self.update_pieces_removed(position)
 
@@ -137,8 +157,8 @@ class Board(object):
         piece = self.get_piece_at_pos(start_pos)
         assert piece is not None  # make sure there is a piece to move
         # TODO: consider adding validation of the move itself
-        piece.pos = end_pos  # update position in pieces list
-        assert self.pieces[self.board[start_pos[0]][start_pos[1]]].pos == piece.pos # TODO just testing if my logic is correct
+        piece['pos'] = end_pos  # update position in pieces list
+        assert self.pieces[self.board[start_pos[0]][start_pos[1]]].pos == piece['pos']  # TODO just testing if my logic is correct
         # update positions on board
         self.board[end_pos[0]][end_pos[1]] = self.board[start_pos[0]][start_pos[1]]
         self.board[start_pos[0]][start_pos[1]] = None
@@ -151,27 +171,66 @@ class Board(object):
         :param team: WHITE or BLACK
         :return: list of placing positions (c, r), or moves ((a, b), (c, d))
         """
-        # set some bounds
+        possible_moves = []
         if self.phase == PLACING_PHASE:
             # the valid places are all empty squares within team zone
-            pass
-        else:
-            # moving phase. Return all valid moves of the team's pieces
-            pass
+            # if team == WHITE
+            rows_start = 0
+            rows_end = 6
+            if team == BLACK:
+                rows_start = 2
+                rows_end = BOARD_SIZE
+            corners = self.get_corners()
+            for c in range(BOARD_SIZE):
+                for r in range(rows_start, rows_end):
+                    if self.get_piece_at_pos((c, r)) is None \
+                            and (c, r) not in corners:
+                        possible_moves.append((c, r))
+            return possible_moves
+
+        # moving phase. Return all valid moves of the team's pieces
+        for piece in self.pieces:
+            if piece is not None and piece['team'] == team:
+                piece_moves = self.get_all_moves_for_piece_at_pos(piece['pos'])
+                # add this piece's moves to the list
+                possible_moves += piece_moves
+        return possible_moves
+
+    def get_all_moves_for_piece_at_pos(self, position):
+        """
+        Returns a list of all moves that can be made by the piece at position
+
+        :param position: position of this piece
+        :return: list of possible moves: ((a, b), (c, d))
+        """
+        possible_moves = []
+        # represents four cardinal directions that each piece can move in
+        offsets = ((1, 0), (0, 1), (-1, 0), (0, -1))
+        corners = self.get_corners()
+        for c_off, r_off in offsets:
+            adj_pos = (position[0] + c_off, position[1] + r_off)
+            if self.in_bounds(adj_pos):
+                piece_index = self.board[adj_pos[0]][adj_pos[1]]
+                if piece_index is None:
+                    if adj_pos not in corners:
+                        # position has no pieces or corners. Can move here
+                        possible_moves.append(adj_pos)
+                else:
+                    # there is a piece here. Can we jump over?
+                    opp_pos = (adj_pos[0] + c_off, adj_pos[1] + r_off)
+                    if self.pos_empty(opp_pos):
+                        possible_moves.append((position, opp_pos))
+        return possible_moves
 
     def advance_phase(self):
         """advance the phase of this board"""
         self.phase += 1
         self.turn_count = 0
-        # TODO: shrink borders and remove outside pieces
-        pieces_to_remove = []
+        # Remove pieces outside the new bounds
         for index, piece in enumerate(self.pieces):
-            if not self.in_bounds(piece.pos):
-                pieces_to_remove.append(index)
-                self.board[piece.pos[0]][piece.pos[1]] = None
-        self.pieces = [x for i, x in enumerate(self.pieces)
-                       if i not in pieces_to_remove]
-        # TODO apply corners and remove more pieces
+            if piece is not None and not self.in_bounds(piece['pos']):
+                self.remove_piece_at_pos(piece['pos'])
+        # apply corners and remove more pieces if needed
         corners = self.get_corners()  # new corners
         # top-left corner
         col, row = corners[0]
@@ -194,6 +253,7 @@ class Board(object):
         """
         Returns the piece at a position (c, r),
         or None if out of bounds or no piece.
+            First checks if position is within bounds
 
         :param position: tuple (column, row)
         :return: piece, or None if there isn't one or out of bounds
@@ -212,15 +272,28 @@ class Board(object):
         """
         piece = self.get_piece_at_pos(position)
         if piece:
-            return piece.team == team
+            return piece['team'] == team
         return False
+
+    def pos_empty(self, pos):
+        """
+        Returns whether or not position is in bounds and free of pieces
+        and corners. (i.e. available for other pieces to move there)
+
+        :param pos: position on board
+        :return: whether or not position is in bounds
+            and free of pieces and corners
+        """
+        return self.in_bounds(pos) and self.board[pos[0]][pos[1]] is None \
+            and pos not in self.get_corners()
 
     def remove_piece_at_pos(self, position):
         """ removes a piece from the game """
         index = self.board[position[0]][position[1]]
         # delete the piece from the board and the piece list
         self.board[position[0]][position[1]] = None
-        self.pieces.pop(index)
+        # results in an empty spot in the piece list
+        self.pieces[index] = None
 
     def in_bounds(self, position):
         """:return: whether or not a position is on the board. Depends on phase
@@ -238,15 +311,23 @@ class Board(object):
 
     def update_pieces_removed(self, mid_pos, attack=True):
         """
-        Removes pieces from the board due to a
-            new piece entering this position
+        Removes pieces from the board due to a new piece entering this position
+
+        If attack=False, then the piece here (if there is one)
+        is not the aggressor.
+
+        If there is no piece in mid_pos, nothing happens.
 
         :param mid_pos: position of this piece (c, r)
         :param attack: whether or not this piece moved here itself
             (if not, it's just defending against corners shrinking)
         :return:
         """
-        mid_team = self.get_piece_at_pos(mid_pos).team
+        # TODO fix this
+        mid_piece = self.get_piece_at_pos(mid_pos)
+        if mid_piece is None:
+            return  # no piece in the middle, so nothing to remove
+        mid_team = mid_piece['team']
         enemy_team = Board.get_opponent_team(mid_team)
         c_mid, r_mid = mid_pos
 
@@ -264,6 +345,7 @@ class Board(object):
                     elif opp_pos in self.get_corners():
                         # also gets removed if corner...
                         self.remove_piece_at_pos(adj_pos)
+
         # Check if the mid piece is itself removed by opponents (and corners)
         # either by up/down or L/R
         u_pos = (c_mid, r_mid - 1)
@@ -291,6 +373,32 @@ class Board(object):
         else:  # self.phase == SHRINK2_PHASE:
             return (2, 2), (2, 5), (5, 5), (5, 2)
 
+    def check_winner(self):
+        """
+        Checks if game is over and returns winner
+            T for tie. None for game not yet finished
+
+        :return: BLACK or WHITE or 'T' or None
+        """
+        black_count = 0
+        white_count = 0
+        for piece in self.pieces:
+            if piece is not None:
+                if piece['team'] == WHITE:
+                    white_count += 1
+                elif piece['team'] == BLACK:
+                    black_count += 1
+                else:
+                    raise ValueError("team should be BLACK or WHITE")
+        if black_count < 2 and white_count < 2:
+            # tie because both teams have fewer than 2 pieces on same turn
+            return 'T'
+        elif black_count < 2:
+            return WHITE
+        elif white_count < 2:
+            return BLACK
+        return None
+
     @staticmethod
     def get_opponent_team(team):
         """ given a team (WHITE or BLACK), returns the opposing team"""
@@ -299,3 +407,21 @@ class Board(object):
         elif team == BLACK:
             return WHITE
         raise ValueError("team should either be BLACK or WHITE")
+
+    def print_board(self):
+        """ prints the current layout of the board """
+        corners = self.get_corners()
+        print('=== BOARD: phase {}, turn {} ==='
+              .format(self.phase, self.turn_count))
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
+                char_to_print = ' '
+                piece_index = self.board[col][row]
+                if piece_index is not None:
+                    char_to_print = self.pieces[piece_index]['team']
+                elif (col, row) in corners:
+                    char_to_print = CORNER
+                print(char_to_print, end=' ')
+            print("")
+
+    # TODO def tostring
