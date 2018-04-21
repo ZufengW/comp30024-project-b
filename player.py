@@ -62,27 +62,36 @@ class Player(object):
 class Board(object):
     def __init__(self):
         # initialise empty board
-        self.positions = {
-            WHITE: [],
-            BLACK: []
-        }
+        self.board = []
+        for i in range(BOARD_SIZE):
+            self.board.append([None] * BOARD_SIZE)
+
+        self.pieces = []
         # start in placing phase
         self.phase = PLACING_PHASE
 
     def place_piece(self, team, position):
         """
         Suitable for placing phase.
+        This is the only way to add a new piece to the board.
         Doesn't check if move is valid
 
         :param team: WHITE or BLACK
-        :param position: (x, y)
+        :param position: (c, r)
         :return:
         """
+        c, r = position
         # TODO: consider adding validation of this move
-        self.positions[team].append(position)
-        # TODO: now check if any pieces were taken
+        self.board[c][r] = len(self.pieces)  # store the index
+        new_piece = {
+            "pos": position,
+            "team": team
+        }
+        self.pieces.append(new_piece)
+        # check if any pieces were taken
+        self.update_pieces_removed(position)
 
-    def move_piece(self, start, end):
+    def move_piece(self, start_pos, end_pos):
         """
         Moves the piece from start to end. For moving phase.
 
@@ -90,9 +99,19 @@ class Board(object):
         :param end:
         :return:
         """
-        # TODO: consider adding validation of this move, and phase
-        # e.g. check if there is a piece there, and target is empty
-        pass
+        # TODO: consider adding/removing validation of this move and phase
+        # Some validation of move
+        assert self.phase != PLACING_PHASE  # cannot move in placing phase
+        assert self.in_bounds(start_pos) and self.in_bounds(end_pos)
+        assert self.get_piece_at_pos(end_pos) is None  # destination is empty
+        assert end_pos not in self.get_corners()
+        piece = self.get_piece_at_pos(start_pos)
+        assert piece is not None  # make sure there is a piece to move
+        piece.pos = end_pos  # update position in pieces list
+        assert self.pieces[self.board[start_pos[0]][start_pos[1]]].pos == piece.pos # TODO just testing if my logic is correct
+        # update positions on board
+        self.board[end_pos[0]][end_pos[1]] = self.board[start_pos[0]][start_pos[1]]
+        self.board[start_pos[0]][start_pos[1]] = None
 
     def get_all_actions(self, team):
         """
@@ -117,58 +136,89 @@ class Board(object):
         # first remove any pieces due to edges reducing
         # then apply new corners one at a time and check if any more removed
 
+    def get_piece_at_pos(self, position):
+        """
+        Returns the piece at a position (c, r),
+        or None if out of bounds or no piece.
+
+        :param position: tuple (column, row)
+        :return: piece, or None if there isn't one or out of bounds
+        """
+        # also check if position is in bounds
+        if self.in_bounds(position):
+            index = self.board[position[0]][position[1]]
+            if index is not None:
+                return self.pieces[index]
+        return None
+
+    def has_piece_of_team(self, position, team):
+        """
+        :return: whether or not the square contains a piece
+            belonging to team
+        """
+        piece = self.get_piece_at_pos(position)
+        if piece:
+            return piece.team == team
+        return False
+
+    def remove_piece_at_pos(self, position):
+        """ removes a piece from the game """
+        index = self.board[position[0]][position[1]]
+        # delete the piece from the board and the piece list
+        self.board[position[0]][position[1]] = None
+        self.pieces.pop(index)
+
+    def in_bounds(self, position):
+        """:return: whether or not a position is on the board. Depends on phase
+        """
+        # but in-bounds also depends on the game state
+        if self.phase == PLACING_PHASE or self.phase == MOVING_PHASE:
+            return 0 <= position[0] < BOARD_SIZE \
+                    and 0 <= position[1] < BOARD_SIZE
+        elif self.phase == SHRINK1_PHASE:
+            return 1 <= position[0] < BOARD_SIZE - 1 \
+                    and 1 <= position[1] < BOARD_SIZE - 1
+        else:
+            return 2 <= position[0] < BOARD_SIZE - 2 \
+                   and 2 <= position[1] < BOARD_SIZE - 2
+
     def update_pieces_removed(self, mid_pos):
         """
         Removes pieces from the board due to a
             new piece entering this position
 
-        :param mid_pos: position of this piece
+        :param mid_pos: position of this piece (c, r)
         :return:
         """
-        # due to a piece being added to mid_pos, it is possible for pieces
-        # in 4 adjacent squares, as well as the start piece itself,
-        # to be removed
-        # So we record the existence of any pieces at these positions
-        # column offset, row offset from centre position
-        offsets = ((0, 0), (0, 2), (0, 1), (0, -2), (0, -1),
-                   (2, 0), (1, 0), (-2, 0), (-1, 0))
-        # mid, uu, u, dd, d, rr, r, ll, l
-        pieces = [None] * 9
-        for team in TEAMS:
-            for col, row in self.positions[team]:
-                c_diff = col - mid_pos[0]
-                r_diff = row - mid_pos[0]
-                for index, offset in enumerate(offsets):
-                    if (c_diff, r_diff) == offset:
-                        pieces[index] = team
-        # Also add corners to the list
-        for col, row in self.get_corners():
-            c_diff = col - mid_pos[0]
-            r_diff = row - mid_pos[0]
-            for index, offset in enumerate(offsets):
-                if (c_diff, r_diff) == offset:
-                    pieces[index] = CORNER
-        # NOTE: after shrinkage, corners are applied one at a time instead
-        mid = pieces[0]  # this is the piece that just moved in
-        assert mid is not None
-        # Cross is complete. Check if enemy pieces are removed (u, r, d, l)
-        for i in range(2, len(pieces), step=2):
-            enemy = pieces[i]
-            if enemy and enemy != mid:
-                # check if flanked on other side by corner or mid's ally
-                if pieces[i-1] == mid or pieces[i-1] == CORNER:
-                    # this enemy is removed from the board
-                    pieces[i] = None
-                    # TODO set this piece to be removed
-        # now check if mid is itself removed
-        enemy = Board.get_opponent_team(mid)
-        if pieces[2] == enemy and pieces[4] == enemy:
-            pieces[0] = None
-            # TODO set this piece to be removed
+        mid_team = self.get_piece_at_pos(mid_pos).team
+        enemy_team = Board.get_opponent_team(mid_team)
+        c_mid, r_mid = mid_pos
 
-
-        # TODO: find a function to remove elements from a list
-        # preferably multiple in one go to avoid errors in iteration
+        # check if any 4 surrounding squares have an opponent to take
+        offsets = (-1, 0), (0, 1), (1, 0), (0, -1)
+        for c_off, r_off in offsets:
+            adj_pos = (c_mid + c_off, r_mid + r_off)
+            if self.has_piece_of_team(adj_pos, enemy_team):
+                # enemy piece here, check other side
+                opp_pos = (c_mid + 2 * c_off, r_mid + 2 * r_off)
+                if self.has_piece_of_team(opp_pos, mid_team):
+                    # adj piece is surrounded. Remove it
+                    self.remove_piece_at_pos(adj_pos)
+                elif opp_pos in self.get_corners():
+                    # also gets removed if corner...
+                    self.remove_piece_at_pos(adj_pos)
+        # Check if the mid piece is itself removed by opponents (and corners)
+        # either by up/down or L/R
+        u_pos = (c_mid, r_mid - 1)
+        d_pos = (c_mid, r_mid + 1)
+        l_pos = (c_mid - 1, r_mid)
+        r_pos = (c_mid + 1, r_mid)
+        corners = self.get_corners()
+        if ((self.has_piece_of_team(u_pos, enemy_team) or u_pos in corners) and
+            (self.has_piece_of_team(d_pos, enemy_team) or d_pos in corners)) or\
+            ((self.has_piece_of_team(l_pos, enemy_team) or l_pos in corners) and
+             (self.has_piece_of_team(r_pos, enemy_team) or r_pos in corners)):
+            self.remove_piece_at_pos(mid_pos)
 
     def get_corners(self):
         """
@@ -181,8 +231,7 @@ class Board(object):
             return (0, 0), (0, 7), (7, 7), (7, 0)
         elif self.phase == SHRINK1_PHASE:
             return (1, 1), (1, 6), (6, 6), (6, 1)
-        else:
-            # self.phase == SHRINK2_PHASE:
+        else:  # self.phase == SHRINK2_PHASE:
             return (2, 2), (2, 5), (5, 5), (5, 2)
 
     @staticmethod
