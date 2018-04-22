@@ -30,9 +30,9 @@ class Board(object):
         # number of turns taken place since start of current game phase
         self.turn_count = 0
 
-    def do_action(self, action, team, test=False):
+    def do_action(self, action, team):
         """
-        Direct way to do the action
+        Updates the board with a team's action
 
         :param action: action to make (same format as for referee)
         :param team: team doing the action
@@ -56,10 +56,6 @@ class Board(object):
             self.advance_phase()
         elif self.phase == SHRINK1_PHASE and self.turn_count == 192:
             self.advance_phase()
-        # TODO consider removing printing of action and board
-        if test:
-            print(team, 'action', action)
-            self.print_board()
 
     def place_piece(self, position, team):
         """

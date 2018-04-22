@@ -43,7 +43,7 @@ class Player(object):
             our_action = actions[randrange(0, len(actions))]
 
         # Update the board with our action
-        self.board.do_action(our_action, self.team, test=True)
+        self.board.do_action(our_action, self.team)
 
         return our_action
 
