@@ -1,4 +1,5 @@
 import board as b
+from random import randrange
 
 
 class Player(object):
@@ -13,6 +14,7 @@ class Player(object):
         """
         # set up a new board
         self.board = b.Board()
+        # set up team allegiances
         self.team = b.BLACK
         if colour == 'white':
             self.team = b.WHITE
@@ -34,10 +36,12 @@ class Player(object):
         # gets list of all actions
         actions = self.board.get_all_actions(self.team)
         # print(self.team, "can choose one of ", actions)
-        # TODO chooses a random one and returns it
-        our_action = None
+        our_action = None  # will forfeit turn if no actions
         if len(actions) > 0:
-            our_action = actions[0]
+            # our_action = actions[0]  # choose first action
+            # choose random action
+            our_action = actions[randrange(0, len(actions))]
+
         # Update the board with our action
         self.board.do_action(our_action, self.team, test=True)
 
@@ -50,5 +54,5 @@ class Player(object):
         :param action: opponent's action
         :return: Nothing
         """
-        # Update our board
+        # Update our board with the opponent's action
         self.board.do_action(action, self.enemy_team)
