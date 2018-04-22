@@ -191,15 +191,15 @@ class Board(object):
         self.update_pieces_removed((col + 1, row), attack=False)
         self.update_pieces_removed((col, row + 1), attack=False)
         # bottom-left corner L
-        col, row = corners[0]
+        col, row = corners[1]
         self.update_pieces_removed((col + 1, row), attack=False)
         self.update_pieces_removed((col, row - 1), attack=False)
         # bottom-right corner _|
-        col, row = corners[0]
+        col, row = corners[2]
         self.update_pieces_removed((col - 1, row), attack=False)
         self.update_pieces_removed((col, row - 1), attack=False)
         # top-right corner -.
-        col, row = corners[0]
+        col, row = corners[3]
         self.update_pieces_removed((col - 1, row), attack=False)
         self.update_pieces_removed((col, row + 1), attack=False)
 
