@@ -54,9 +54,9 @@ class Board(object):
             self.advance_phase()
         elif self.phase == MOVING_PHASE and self.turn_count == 128:
             self.advance_phase()
-        elif self.phase == SHRINK1_PHASE and self.turn_count == 64:
+        elif self.phase == SHRINK1_PHASE and self.turn_count == 192:
             self.advance_phase()
-        # TODO printing of board and action
+        # TODO consider removing printing of action and board
         if test:
             print(team, 'action', action)
             self.print_board()
@@ -101,14 +101,16 @@ class Board(object):
         assert self.in_bounds(start_pos) and self.in_bounds(end_pos)
         assert self.get_piece_at_pos(end_pos) is None  # destination is empty
         assert end_pos not in self.get_corners()
+
         piece = self.get_piece_at_pos(start_pos)
         assert piece is not None  # make sure there is a piece to move
         # TODO: consider adding validation of the move itself
         piece['pos'] = end_pos  # update position in pieces list
-        assert self.pieces[self.board[start_pos[0]][start_pos[1]]].pos == piece['pos']  # TODO just testing if my logic is correct
         # update positions on board
         self.board[end_pos[0]][end_pos[1]] = self.board[start_pos[0]][start_pos[1]]
         self.board[start_pos[0]][start_pos[1]] = None
+        # update pieces removed due to this piece moving
+        self.update_pieces_removed(piece['pos'])
 
     def get_all_actions(self, team):
         """
@@ -161,7 +163,7 @@ class Board(object):
                 if piece_index is None:
                     if adj_pos not in corners:
                         # position has no pieces or corners. Can move here
-                        possible_moves.append(adj_pos)
+                        possible_moves.append((position, adj_pos))
                 else:
                     # there is a piece here. Can we jump over?
                     opp_pos = (adj_pos[0] + c_off, adj_pos[1] + r_off)
@@ -171,14 +173,19 @@ class Board(object):
 
     def advance_phase(self):
         """advance the phase of this board"""
+        if self.phase == PLACING_PHASE:
+            # turn count doesn't reset if board shrinks
+            self.turn_count = 0
         self.phase += 1
-        self.turn_count = 0
-        # Remove pieces outside the new bounds
-        for index, piece in enumerate(self.pieces):
-            if piece is not None and not self.in_bounds(piece['pos']):
-                self.remove_piece_at_pos(piece['pos'])
-        # apply corners and remove more pieces if needed
+
         corners = self.get_corners()  # new corners
+        # Remove pieces outside the new bounds or overlapping with new corners
+        for index, piece in enumerate(self.pieces):
+            if piece is not None:
+                if not self.in_bounds(piece['pos']) or piece['pos'] in corners:
+                    self.remove_piece_at_pos(piece['pos'])
+
+        # apply corners and remove more pieces if needed
         # top-left corner
         col, row = corners[0]
         self.update_pieces_removed((col + 1, row), attack=False)
@@ -285,7 +292,7 @@ class Board(object):
                 adj_pos = (c_mid + c_off, r_mid + r_off)
                 if self.has_piece_of_team(adj_pos, enemy_team):
                     # enemy piece here, check other side
-                    opp_pos = (c_mid + 2 * c_off, r_mid + 2 * r_off)
+                    opp_pos = (adj_pos[0] + c_off, adj_pos[1] + r_off)
                     if self.has_piece_of_team(opp_pos, mid_team):
                         # adj piece is surrounded. Remove it
                         self.remove_piece_at_pos(adj_pos)
@@ -360,6 +367,7 @@ class Board(object):
         corners = self.get_corners()
         print('=== BOARD: phase {}, turn {} ==='
               .format(self.phase, self.turn_count))
+        print('0 1 2 3 4 5 6 7')
         for row in range(BOARD_SIZE):
             for col in range(BOARD_SIZE):
                 char_to_print = ' '
