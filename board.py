@@ -309,6 +309,41 @@ class Board(object):
              (self.has_piece_of_team(r_pos, enemy_team) or r_pos in corners)):
             self.remove_piece_at_pos(mid_pos)
 
+    def distance_to_nearest_of_team(self, pos, team):
+        """ returns distance to nearest piece belonging to team
+
+        :param pos: (c, r)
+        :param team: team of piece search for
+        :return: Manhattan distance between pos and piece
+        """
+        best_dist = 999
+        for piece in self.pieces:
+            if piece is not None and piece['team'] == team:
+                dist = abs(pos[0] - piece['pos'][0]) \
+                        + abs(pos[1] - piece['pos'][1])
+                best_dist = min(dist, best_dist)
+        if best_dist == 999:
+            return -1  # did not find any pieces
+        return best_dist
+
+    def get_piece_nearest_to_pos_of_team(self, pos, team):
+        """ returns piece nearest to pos and belonging to team
+
+        :param pos: (c, r)
+        :param team: team of piece search for
+        :return: piece object, or None if couldn't find
+        """
+        best_dist = 999
+        nearest_piece = None
+        for piece in self.pieces:
+            if piece is not None and piece['team'] == team:
+                dist = abs(pos[0] - piece['pos'][0]) \
+                        + abs(pos[1] - piece['pos'][1])
+                if dist < best_dist:
+                    best_dist = dist
+                    nearest_piece = piece
+        return nearest_piece
+
     def get_corners(self):
         """
         returns the positions of the current corners of the board
