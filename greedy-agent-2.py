@@ -7,9 +7,6 @@ class Board2(b.Board):
     # additional methods
     def value_board(self, team):
         """ determines how favourable this board state is """
-        # TODO for a particular team?
-        # TODO: very basic: just count number of pieces in each team
-        # TODO: consider each piece's distance to middle
 
         # simple version: just count number of pieces
         ally = team
@@ -66,8 +63,6 @@ class Player(object):
         actions = self.board.get_all_actions(self.team)
         our_action = None  # will forfeit turn if no actions
 
-        # TODO calculate the board state after applying each action
-        # copy the board
         # TODO consider undoing or reusing instead of instantiating more boards
         next_values = [0] * len(actions)
         best_value = -999
@@ -79,8 +74,7 @@ class Player(object):
             # and keep track of the best value
             best_value = max(best_value, next_values[i])
 
-        # TODO pick among the best states
-        # filter out non-favourable states
+        # filter out actions with non-favourable states
         best_actions = []
         for i in range(len(next_values)):
             if next_values[i] == best_value:
@@ -88,8 +82,7 @@ class Player(object):
 
         print("best, len-best, len-all: ", best_value, len(best_actions), len(actions))
         if len(best_actions) > 0:
-            # our_action = actions[0]  # choose first action
-            # choose random action
+            # choose random action among equally-best actions
             our_action = best_actions[randrange(0, len(best_actions))]
 
         # Update the board with our action
