@@ -30,7 +30,7 @@ class Board2(b.Board):
                         # can subtract less here if want to play aggressive
                         counts[team] -= piece_value
                     else:  # enemy piece threatened. They could move it though
-                        counts[enemy] -= piece_value // 2
+                        counts[enemy] -= piece_value // 3
 
         # symmetry in calculation
         return counts[team] - counts[enemy]
