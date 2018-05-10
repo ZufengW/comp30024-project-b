@@ -175,15 +175,17 @@ class Player(object):
             since start of current game phase
         :return: next action
         """
-        # TODO: opening book
         # TODO: alpha beta pruning
-        # different Minimax search depth depending on game phase
-        depth = 2 + max(0, self.board.phase - 1)
-        best_actions = self.board.get_best_actions_from_state(
-                self.team, self.enemy_team, depth)
-        print("Minimax depth: ", depth)
-        if turns == 0 and self.team == b.WHITE:
-            print("Best actions: ", best_actions)
+        # Opening Book
+        if self.board.phase == b.PLACING_PHASE and turns == 0:
+            # These are good first moves for WHITE
+            best_actions = [(3, 4), (4, 4)]
+        else:
+            # different Minimax search depth depending on game phase
+            depth = 2 + max(0, self.board.phase - 1)
+            best_actions = self.board.get_best_actions_from_state(
+                    self.team, self.enemy_team, depth)
+            print("Minimax depth: ", depth)
 
         our_action = None  # will forfeit turn if no actions
         if len(best_actions) > 0:
