@@ -73,32 +73,82 @@ class Board2(b.Board):
                 return pos[1] > 1
         return False
 
-    def get_best_value_from_state(self, team):
+    def get_best_value_from_state(self, team, enemy, depth=1):
         """ If this board is current state and it's team's turn,
         return the best value they can get.
 
         :param team: to move
+        :param enemy: other team
+        :param depth: depth of recursion
         :return: highest value for this team
         """
-        # calculate all possible actions
+        # calculate all possible actions for team in this board state
         actions = self.get_all_actions(team)
+        # Edge case: no possible actions. Need to pass turn
+        if len(actions) == 0:
+            board = deepcopy(self)
+            board.do_action(None, team)  # pass turn
+            if depth > 1:
+                return board.get_best_value_from_state(enemy, team, depth - 1)
+            else:
+                return board.value_board(team)
+
         next_values = [0] * len(actions)
-        best_value = -999
         for i in range(len(next_values)):
             board = deepcopy(self)
             board.do_action(actions[i], team)
             # calculate how favourable the next state is
-            next_values[i] = board.value_board(team)
-            # and keep track of the best value
-            best_value = max(best_value, next_values[i])
-        return best_value
+            if depth > 1:
+                next_values[i] = \
+                    board.get_best_value_from_state(enemy, team, depth - 1)
+            else:  # base case: won't go any deeper. Just use heuristics
+                next_values[i] = board.value_board(team)
+        if depth % 2 == 0:
+            return min(next_values)
+        else:
+            return max(next_values)
+
+    def get_best_actions_from_state(self, team, enemy, depth=1):
+        """ Does minimax to get list of good actions for team
+
+        :param team: to move
+        :param enemy: other team
+        :param depth: depth of recursion
+        :return: list of actions giving best value for team
+        """
+        actions = self.get_all_actions(team)
+        # Edge case: no possible actions
+        if len(actions) == 0:
+            return []
+
+        # calculate how favourable the state is after applying each action
+        next_values = [0] * len(actions)
+        for i in range(len(next_values)):
+            board = deepcopy(self)
+            board.do_action(actions[i], team)
+            if depth > 1:
+                next_values[i] = \
+                    board.get_best_value_from_state(enemy, team, depth - 1)
+            else:
+                next_values[i] = board.value_board(team)
+        if depth % 2 == 0:
+            best_value = min(next_values)
+        else:
+            best_value = max(next_values)
+
+        # filter out less-favourable states
+        best_actions = []
+        for i in range(len(next_values)):
+            if next_values[i] == best_value:
+                best_actions.append(actions[i])
+        return best_actions
 
 
 class Player(object):
     """
     An agent that can play Watch Your Back.
     This agent looks at the next state caused by each action to pick an action
-    TODO Like greedy-agent-3 but does minimax
+    Like greedy-agent-3 but does Minimax to search more turns deep
     """
 
     def __init__(self, colour):
@@ -125,37 +175,23 @@ class Player(object):
             since start of current game phase
         :return: next action
         """
-        # assert turns == self.board.turn_count
-        # gets list of all actions
-        actions = self.board.get_all_actions(self.team)
+        # TODO: opening book
+        # TODO: alpha beta pruning
+        # different Minimax search depth depending on game phase
+        depth = 2 + max(0, self.board.phase - 1)
+        best_actions = self.board.get_best_actions_from_state(
+                self.team, self.enemy_team, depth)
+        print("Minimax depth: ", depth)
+        if turns == 0 and self.team == b.WHITE:
+            print("Best actions: ", best_actions)
 
-        # calculate how favourable the state is after applying each action
-        next_values = [0] * len(actions)
-        best_value = 999
-        for i in range(len(next_values)):
-            board = deepcopy(self.board)
-            board.do_action(actions[i], self.team)
-            # Do opponent's turn to calculate the value of their best response
-            # calculate how favourable the next state is based on opponent
-            next_values[i] = board.get_best_value_from_state(self.enemy_team)
-            # and keep track of the best value (lowest enemy value)
-            best_value = min(best_value, next_values[i])
-
-        # filter out less-favourable states
-        best_actions = []
-        for i in range(len(next_values)):
-            if next_values[i] == best_value:
-                best_actions.append(actions[i])
-
-        print("{}: best {}, len-best {}, len-all {}".format(self.team, best_value, len(best_actions), len(actions)))
         our_action = None  # will forfeit turn if no actions
         if len(best_actions) > 0:
-            # choose random action
+            # choose random action among our best actions
             our_action = best_actions[randrange(0, len(best_actions))]
 
         # Update the board with our action
         self.board.do_action(our_action, self.team)
-
         return our_action
 
     def update(self, action):
