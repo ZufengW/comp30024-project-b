@@ -31,7 +31,8 @@ class Board2(b.Board):
 class Player(object):
     """
     An agent that can play Watch Your Back.
-    This agent looks at the next state caused by each action to pick an action
+    This agent looks at the next state caused by each action to pick an action.
+    Like greedy-agent, but also considers distance of piece to centre.
     """
 
     def __init__(self, colour):

@@ -78,7 +78,8 @@ class Player(object):
     """
     An agent that can play Watch Your Back.
     This agent looks at the next state caused by each action to pick an action
-    Like greedy-agent-2 but able to go more layers deeper
+    Like greedy-agent-2 but also considers which pieces are threatened
+    during placing phase.
     """
 
     def __init__(self, colour):
