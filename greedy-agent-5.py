@@ -140,7 +140,6 @@ class Board2(bm.Board):
         if len(actions) == 0:
             return []
 
-        # TODO figure out why B and A don't print
         # calculate how favourable the state is after applying each action
         next_values = [0] * len(actions)
         if depth % 2 == 1:  # maximising
@@ -153,8 +152,7 @@ class Board2(bm.Board):
                 best_value = max(best_value, next_values[i])
                 a = max(a, best_value)
                 if b < a:
-                    print("B cut off")
-                    break  # b cut-off
+                    break  # beta cut-off (shouldn't happen)
         else:  # minimising
             best_value = math.inf
             for i in range(len(next_values)):
@@ -165,8 +163,7 @@ class Board2(bm.Board):
                 best_value = min(best_value, next_values[i])
                 b = min(b, best_value)
                 if b < a:
-                    print("A cut off")
-                    break  # a cut-off
+                    break  # alpha cut-off (shouldn't happen)
 
         # filter out less-favourable states
         best_actions = []
