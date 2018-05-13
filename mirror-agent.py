@@ -15,8 +15,10 @@ class Board2(bm.Board):
         """
         enemy = Board2.get_opponent_team(team)  # enemy of team
         counts = {team: 0, enemy: 0}
+        num_pieces = {team: 0, enemy: 0}  # number of pieces
         for piece in self.pieces:
             if piece is not None:
+                num_pieces[piece['team']] += 1
                 # live pieces are worth points
                 # also gives weight to distance of piece from middle
                 dist_from_mid = Board2.distance_of_pos_to_mid(piece['pos'])
@@ -36,7 +38,12 @@ class Board2(bm.Board):
                         counts[team] -= piece_value
                     else:  # enemy piece threatened. They could move it though
                         counts[enemy] -= piece_value // 3
-
+                elif self.phase == bm.SHRINK2_PHASE:
+                    # during final phase, also check for win condition
+                    if num_pieces[team] > 1 and num_pieces[enemy] <= 1:
+                        counts[team] += 888  # team has won
+                    elif num_pieces[enemy] > 1 and num_pieces[team] <= 1:
+                        counts[enemy] += 888  # enemy has won
         # symmetry in calculation
         return counts[team] - counts[enemy]
 
@@ -244,6 +251,8 @@ class Player(object):
             depth = 2 + max(0, self.board.phase - 1)
             if self.board.phase == bm.PLACING_PHASE:
                 depth = 3  # otherwise mirror doesn't work properly
+            if self.board.phase == bm.SHRINK2_PHASE:
+                depth = 5  # high depth because low branching factor
             best_actions, best_value = self.board.get_best_actions_from_state(
                     self.team, self.enemy_team, depth)
             print("    {} Minimax depth: {}".format(self.team, depth))
