@@ -19,7 +19,10 @@ class Board2(bm.Board):
             if piece is not None:
                 # live pieces are worth points
                 # also gives weight to distance of piece from middle
-                piece_value = 30 - Board2.distance_of_pos_to_mid(piece['pos'])
+                dist_from_mid = Board2.distance_of_pos_to_mid(piece['pos'])
+                piece_value = 30 - dist_from_mid
+                if dist_from_mid == 0:  # central four squares
+                    piece_value += 3  # bonus because valuable in end-game
                 counts[piece['team']] += piece_value
 
                 # During placing phase, consider if this piece is threatened
