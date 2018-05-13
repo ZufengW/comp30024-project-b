@@ -60,12 +60,12 @@ class Board2(bm.Board):
             if self.has_piece_of_team(side, enemy) or side in corners:
                 # one side is threatened. What about other?
                 other_side = (pos[0] + x_off, pos[1] + y_off)
-                if self.__pos_can_be_placed_in(other_side, enemy):
+                if self.pos_can_be_placed_in(other_side, enemy):
                     return True
         return False
         # TODO consider edge case of final place
 
-    def __pos_can_be_placed_in(self, pos, team):
+    def pos_can_be_placed_in(self, pos, team):
         """ :return whether or not pos is within team's placing boundary during
         Placing Phase and is available to be placed in"""
         if self.pos_empty(pos):  # is the position in bounds and empty?
@@ -106,7 +106,8 @@ class Board2(bm.Board):
             for action in actions:
                 board = deepcopy(self)
                 board.do_action(action, team)
-                best_value = max(best_value, board.get_best_value_for_state(enemy, team, depth - 1, a, b))
+                best_value = max(best_value, board.get_best_value_for_state(
+                        enemy, team, depth - 1, a, b))
                 a = max(a, best_value)
                 if b < a:
                     # print(b, "<", a, "D cut off: depth", depth)
@@ -117,7 +118,8 @@ class Board2(bm.Board):
             for action in actions:
                 board = deepcopy(self)
                 board.do_action(action, team)
-                best_value = min(best_value, board.get_best_value_for_state(enemy, team, depth - 1, a, b))
+                best_value = min(best_value, board.get_best_value_for_state(
+                        enemy, team, depth - 1, a, b))
                 b = min(b, best_value)
                 if b < a:
                     # print(b, "<", a, "C cut off: depth", depth)
@@ -132,13 +134,13 @@ class Board2(bm.Board):
         :param depth: depth of recursion
         :param a: Alpha
         :param b: Beta
-        :return: list of actions giving best value for team
+        :return: list of actions giving best value for team, and the best value
         """
         assert depth > 0  # only the other function should deal with base case
         actions = self.get_all_actions(team)
         # Edge case: no possible actions
         if len(actions) == 0:
-            return []
+            return [], self.value_board(team)
 
         # calculate how favourable the state is after applying each action
         next_values = [0] * len(actions)
@@ -152,7 +154,7 @@ class Board2(bm.Board):
                 best_value = max(best_value, next_values[i])
                 a = max(a, best_value)
                 if b < a:
-                    break  # beta cut-off (shouldn't happen)
+                    break  # beta cut-off (shouldn't happen because top depth)
         else:  # minimising
             best_value = math.inf
             for i in range(len(next_values)):
@@ -163,7 +165,7 @@ class Board2(bm.Board):
                 best_value = min(best_value, next_values[i])
                 b = min(b, best_value)
                 if b < a:
-                    break  # alpha cut-off (shouldn't happen)
+                    break  # alpha cut-off (shouldn't happen because top depth)
 
         # filter out less-favourable states
         best_actions = []
@@ -171,17 +173,31 @@ class Board2(bm.Board):
             if next_values[i] == best_value:
                 best_actions.append(actions[i])
         # TODO remove test printing
-        print("    {} best_value {}, best_actions {}".format(team,
-                                                             best_value,
-                                                             best_actions))
-        return best_actions
+        print("    {} best_value {}, best_actions {}".format(
+                team, best_value, best_actions))
+        return best_actions, best_value
+
+    @staticmethod
+    def mirror_pos(pos):
+        """
+        :param pos: position to mirror
+        :return: pos mirrored diagonally across the board
+        """
+        result = []
+        for d in pos:
+            if d < 4:
+                d += (((4 - d) * 2) - 1)
+            else:
+                d -= (((d - 3) * 2) - 1)
+            result.append(d)
+        return result[0], result[1]
 
 
 class Player(object):
     """
     An agent that can play Watch Your Back.
     This agent looks at the next state caused by each action to pick an action
-    Like greedy-agent-4 but does alpha-beta pruning
+    Like greedy-agent-5 but does mirroring if playing as black
     """
 
     def __init__(self, colour):
@@ -200,6 +216,10 @@ class Player(object):
             raise ValueError("colour must be 'white' or 'black'")
         self.enemy_team = bm.Board.get_opponent_team(self.team)
 
+        # extra variables for mirror strategy
+        self.mirroring = True  # whether or not still mirroring
+        self.enemy_action = None  # enemy team's last action
+
     def action(self, turns):
         """
         called by the referee to request an action from the player
@@ -208,16 +228,37 @@ class Player(object):
             since start of current game phase
         :return: next action
         """
+        best_value = 99
         # Opening Book
         if self.board.phase == bm.PLACING_PHASE and turns == 0:
             # These are good first moves for WHITE
             best_actions = [(3, 4), (4, 4)]
         else:
             # different Minimax search depth depending on game phase
-            depth = 2 + max(0, self.board.phase - 1)
-            best_actions = self.board.get_best_actions_from_state(
+            depth = 3 + max(0, self.board.phase - 1)
+            best_actions, best_value = self.board.get_best_actions_from_state(
                     self.team, self.enemy_team, depth)
             print("    {} Minimax depth: {}".format(self.team, depth))
+
+        # Mirror strategy during Placing Phase
+        if self.mirroring and self.team == bm.BLACK \
+                and self.board.phase == bm.PLACING_PHASE and best_value < 2:
+            # continue mirroring strategy
+            mirror_action = Board2.mirror_pos(self.enemy_action)
+            print("    {} Mirror. best_value {}, action {}".format(
+                    self.team, best_value, mirror_action))
+            if self.board.pos_can_be_placed_in(mirror_action, self.team):
+                # Update the board with our action
+                self.board.do_action(mirror_action, self.team)
+                return mirror_action
+            else:
+                # should not happen because there should always be space
+                print('M ASSERTION INCORRECT')
+                self.mirroring = False
+        else:
+            # stop mirroring either because white did bad move
+            # or Placing Phase ended
+            self.mirroring = False
 
         our_action = None  # will forfeit turn if no actions
         if len(best_actions) > 0:
@@ -237,3 +278,4 @@ class Player(object):
         """
         # Update our board with the opponent's action
         self.board.do_action(action, self.enemy_team)
+        self.enemy_action = action
