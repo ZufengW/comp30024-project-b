@@ -145,6 +145,9 @@ class Board2(bm.Board):
         # calculate how favourable the state is after applying each action
         next_values = [0] * len(actions)
         if depth % 2 == 1:  # maximising
+            # sort actions (order by best actions first) to optimise pruning
+            if self.phase == bm.PLACING_PHASE:
+                actions.sort(key=lambda x: Board2.distance_of_pos_to_mid(x))
             best_value = -math.inf
             for i in range(len(next_values)):
                 board = deepcopy(self)
