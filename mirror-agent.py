@@ -238,7 +238,9 @@ class Player(object):
             best_actions = [(3, 4), (4, 4)]
         else:
             # different Minimax search depth depending on game phase
-            depth = 3 + max(0, self.board.phase - 1)
+            depth = 2 + max(0, self.board.phase - 1)
+            if self.board.phase == bm.PLACING_PHASE:
+                depth = 3  # otherwise mirror doesn't work properly
             best_actions, best_value = self.board.get_best_actions_from_state(
                     self.team, self.enemy_team, depth)
             print("    {} Minimax depth: {}".format(self.team, depth))
