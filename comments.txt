@@ -31,7 +31,7 @@ greedy-agent-2
 	Same as greedy agent, except its valuation function also considers the distance of pieces from the centre. This results in pieces trying to clump in the centre of the board.
 
 greedy-agent-3
-	Like greedy-agent-2, but the valuation function also considers which pieces are threatened during Placing Phase. (A major weakness of all the previous agents was that they sometimes places pieces in positions where they could be captured by the opponent on the next turn.) It also takes into account the turn (i.e. player initiative): If a team plays an action and its pieces are threatened, it is considered worse than if it played an action and the opponent pieces were threatened. This is because the opponent has initiative after this action and can choose to capture and/or defend.
+	Like greedy-agent-2, but the valuation function also considers which pieces are threatened during Placing Phase. (A major weakness of all the previous agents was that they sometimes placed pieces in positions where they could be captured by the opponent on the next turn.) It also takes into account the turn (i.e. player initiative): If a team plays an action and its pieces are threatened, it is considered worse than if it played an action and the opponent pieces were threatened. This is because the opponent has initiative after this action and can choose to capture and/or defend.
 
 greedy-agent-4
 	Like greedy-agent-3, but does Minimax to search more turns deep. (The previous greedy-agents had search depth of 1.) It uses different search depths depending on the phase of the game. Later phases tend to have lower branching factor.
