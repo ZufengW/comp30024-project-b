@@ -11,10 +11,38 @@ greedy-agent-4.py
 greedy-agent-5.py
 human-agent.py
 mirror-agent.py
-Monte_Carlo_Algorithm.py (unfinished) 
+Monte_Carlo_Algorithm.py (unfinished)
 
 For this project please mark our mirror-agent, justifications given below.
+	(the only two files required for it to work are board.py and mirror-agent.py)
 
+The overall structure of the project is one Board class (in the board module), and multiple agents that extend and use methods from it. There is a lot of duplicate code in the agent files, but that is an intentional decision to allow for any number of agents to be deleted without breaking dependencies in the others.
+
+The agents are the result of a number of design iterations. Here is a summary:
+
+random-agent.py
+	This was created along with the board as the first step to make the simulation work. It plays random valid actions. Because of this, it is the fastest but also the weakest agent.
+
+greedy-agent.py
+	The first of the hill-climbing agents. It calculates the next board state following each of its possible actions. Then it plays an action resulting the most favourable state. To determine how favourable states are, it has a basic valuation function that considers the number of pieces remaining in each team. Because of this, it will capture opponent pieces (greedily) when it can.
+
+greedy-agent-2
+	Same as greedy agent, except its valuation function also considers the distance of pieces from the centre. This results in pieces trying to clump in the centre of the board.
+
+greedy-agent-3
+	Like greedy-agent-2, but the valuation function also considers which pieces are threatened during Placing Phase. (A major weakness of all the previous agents was that they sometimes places pieces in positions where they could be captured by the opponent on the next turn.)
+
+greedy-agent-4
+	Like greedy-agent-3, but does Minimax to search more turns deep. (The previous greedy-agents had search depth of 1.) It uses different search depths depending on the phase of the game. Later phases tend to have lower branching factor.
+	It also has an Opening Book containing pre-computed good first moves for WHITE. (These moves were calculated using our domain knowledge as well as deeper Minimax searches.)
+
+greedy-agent-5
+	Like greedy-agent-4, but also does alpha-beta pruning. (The algorithm used is based on the pseudocode from Wikipedia (https://en.wikipedia.org/wiki/Alpha-beta_pruning).) It runs quicker due to the pruning.
+
+mirror-agent
+	Like greedy-agent-5, but also implements a Mirror strategy: When playing as BLACK, the mirror-agent may choose to mirror WHITE’s moves during Placing Phase. This tactic was implemented in an attempt to combat WHITE’s first turn advantage. WHITE’s first turn advantage usually allows it to gain control of the central four squares, which are important in the end game, if playing optimally. However, Mirror strategy allows BLACK to maintain an equivalent position to WHITE except one move behind. Black can also stop Mirroring early if it thinks there’s a better move (e.g. if playing against a weaker agent).
+	The alpha-beta pruning is optimised slightly by sorting the actions list (by distance to centre of board) during Placing Phase. This helps it to prune branches containing lower-value moves earlier.
+	It also has an extra part in the valuation function that considers win conditions.
 
 
 *********************************************************************
