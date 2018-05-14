@@ -5,9 +5,11 @@ The project contains the following files:
 Board Class
 Player Class
 Greedy Agents 1-5
+Human Agent
+Mirror Agent
 Monte_Carlo_Algorithim (unfinished) 
 
-
+For this project please mark our Mirror Agent, justifications given below.
 
 
 
@@ -15,6 +17,12 @@ Monte_Carlo_Algorithim (unfinished)
 Monte_Carlo_Tree_Search
 *********************************************************************
 There was an attempt to integrate the Monte Carlo Tree Search  into a greedy agent, however the issue was that it was quite difficult to get the agent itself functional and efficient enough to be kept under the required timeframe. Therefore work on the system stopped with the final code being disfunctional for now. 
+
+The reason why Monte Carlo Tree Search was attempted was that it can technically resolve the branching factor problem while 
+still giving a relatively optimal solution to the problem. This in turn made is a viable algorithim as there is a limit on
+time and space imposed during this project. What was not known at the time of idation was that the simulaiton algorithim
+which is based upon the greedy agents was too slow. Which in turn stalled the idea.
+
 
 The Monte Carlo Tree Search works in the following way:
 1. Selection
