@@ -1,26 +1,30 @@
 *********************************************************************
-Project created by Zufang Wang  and HaoHai Liu 2018 Semster 1 for AI 
+Project B by Zufeng Wang and HaoHai Liu 2018 Semester 1 AI COMP30024
 *********************************************************************
-The project contains the following files:
-Board Class
-Player Class
-Greedy Agents 1-5
-Human Agent
-Mirror Agent
-Monte_Carlo_Algorithim (unfinished) 
+The project contains the following Python files:
+board.py
+random-agent.py
+greedy-agent.py
+greedy-agent-2.py
+greedy-agent-3.py
+greedy-agent-4.py
+greedy-agent-5.py
+human-agent.py
+mirror-agent.py
+Monte_Carlo_Algorithm.py (unfinished) 
 
-For this project please mark our Mirror Agent, justifications given below.
+For this project please mark our mirror-agent, justifications given below.
 
 
 
 *********************************************************************
 Monte_Carlo_Tree_Search
 *********************************************************************
-There was an attempt to integrate the Monte Carlo Tree Search  into a greedy agent, however the issue was that it was quite difficult to get the agent itself functional and efficient enough to be kept under the required timeframe. Therefore work on the system stopped with the final code being disfunctional for now. 
+There was an attempt to integrate the Monte Carlo Tree Search into a greedy agent, however the issue was that it was quite difficult to get the agent itself functional and efficient enough to be kept under the required timeframe. Therefore work on the system stopped with the final code being dysfunctional for now. 
 
 The reason why Monte Carlo Tree Search was attempted was that it can technically resolve the branching factor problem while 
-still giving a relatively optimal solution to the problem. This in turn made is a viable algorithim as there is a limit on
-time and space imposed during this project. What was not known at the time of idation was that the simulaiton algorithim
+still giving a relatively optimal solution to the problem. This in turn made it a viable algorithm as there is a limit on
+time and space imposed during this project. What was not known at the time of ideation was that the simulation algorithm
 which is based upon the greedy agents was too slow. Which in turn stalled the idea.
 
 
@@ -28,13 +32,13 @@ The Monte Carlo Tree Search works in the following way:
 1. Selection
 2. Expansion
 3. Simulation
-4. Back propergation
+4. Back propagation
 
 The selection phase typically involves walking down the most favourable path until you're at a leaf, at which an expansion phase will occur, this could be random or predetermined based upon a mathematical function, but for our case it could just be simply all the moves in which the agent could take. 
 
-Simulation is then played out randomly on a set of nodes, the general method is to do the playouts randomly but we attempted to use greedy agent for this scenario. After much consideration it was estimated that even if we do 5 playouts of around 100 turns each, the speed of the Simulation part would always slow, which in turn threatens the simualtion time limit of the game. The simulation should always return a win or loss, which is problematic since some greedy search games will always get stuck in a loop. 
+Simulation is then played out randomly on a set of nodes, the general method is to do the playouts randomly but we attempted to use greedy agent for this scenario. After much consideration it was estimated that even if we do 5 playouts of around 100 turns each, the speed of the Simulation part would always slow, which in turn threatens the simulation time limit of the game. The simulation should always return a win or loss, which is problematic since some greedy search games will always get stuck in a loop. 
 
-Back Propergation is essentially going back to the root to the tree and updating the number of wins and loses within a simulation. 
+Back Propagation is essentially going back to the root to the tree and updating the number of wins and loses within a simulation. 
 
 
 
