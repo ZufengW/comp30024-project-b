@@ -6,7 +6,7 @@ from copy import deepcopy
 
 """
 Monte Carlo Algorithim implementation for Watch your back game
-Implemented by Harrison Liu 2018 for COMP30024 AI This code in its current form will not work
+for COMP30024 AI This code in its current form will not work
 
 Base Functionality As follows:
 
