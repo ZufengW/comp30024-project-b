@@ -1,0 +1,32 @@
+*********************************************************************
+Project created by Zufang Wang  and HaoHai Liu 2018 Semster 1 for AI 
+*********************************************************************
+The project contains the following files:
+Board Class
+Player Class
+Greedy Agents 1-5
+Monte_Carlo_Algorithim (unfinished) 
+
+
+
+
+
+*********************************************************************
+Monte_Carlo_Tree_Search
+*********************************************************************
+There was an attempt to integrate the Monte Carlo Tree Search  into a greedy agent, however the issue was that it was quite difficult to get the agent itself functional and efficient enough to be kept under the required timeframe. Therefore work on the system stopped with the final code being disfunctional for now. 
+
+The Monte Carlo Tree Search works in the following way:
+1. Selection
+2. Expansion
+3. Simulation
+4. Back propergation
+
+The selection phase typically involves walking down the most favourable path until you're at a leaf, at which an expansion phase will occur, this could be random or predetermined based upon a mathematical function, but for our case it could just be simply all the moves in which the agent could take. 
+
+Simulation is then played out randomly on a set of nodes, the general method is to do the playouts randomly but we attempted to use greedy agent for this scenario. After much consideration it was estimated that even if we do 5 playouts of around 100 turns each, the speed of the Simulation part would always slow, which in turn threatens the simualtion time limit of the game. The simulation should always return a win or loss, which is problematic since some greedy search games will always get stuck in a loop. 
+
+Back Propergation is essentially going back to the root to the tree and updating the number of wins and loses within a simulation. 
+
+
+
