@@ -185,9 +185,8 @@ class Board2(bm.Board):
         for i in range(len(next_values)):
             if next_values[i] == best_value:
                 best_actions.append(actions[i])
-        # TODO remove test printing
-        print("    {} best_value {}, best_actions {}".format(
-                team, best_value, best_actions))
+        # print("    {} best_value {}, best_actions {}".format(
+        #         team, best_value, best_actions))
         return best_actions, best_value
 
     @staticmethod
@@ -255,15 +254,15 @@ class Player(object):
                 depth = 5  # high depth because low branching factor
             best_actions, best_value = self.board.get_best_actions_from_state(
                     self.team, self.enemy_team, depth)
-            print("    {} Minimax depth: {}".format(self.team, depth))
+            # print("    {} Minimax depth: {}".format(self.team, depth))
 
         # Mirror strategy during Placing Phase
         if self.mirroring and self.team == bm.BLACK \
                 and self.board.phase == bm.PLACING_PHASE and best_value < 2:
             # continue mirroring strategy
             mirror_action = Board2.mirror_pos(self.enemy_action)
-            print("    {} Mirror. best_value {}, action {}".format(
-                    self.team, best_value, mirror_action))
+            # print("    {} Mirror. best_value {}, action {}".format(
+            #         self.team, best_value, mirror_action))
             if self.board.pos_can_be_placed_in(mirror_action, self.team):
                 # Update the board with our action
                 self.board.do_action(mirror_action, self.team)
