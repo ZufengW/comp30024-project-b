@@ -1,12 +1,12 @@
 # Watch Your Back
-A repo containing AI agents that can play the game
+A repo containing AI agents that can play the game "Watch Your Back".
+Also contains the referee to run the game.
 
 ## Set up
-`cd` to the folder where you want to clone this repo 
+`cd` to the directory where you want to clone this repo
 ```bash
 git clone git@github.com:ZufengW/comp30024-project-b.git
 ```
-Download `referee.py` and put in the repo
 
 Run a game:
 ```bash
@@ -17,4 +17,4 @@ Where `python` is the name of the Python 3.6 interpreter,
 containing the `Player` classes playing as White player and Black player.
 
 ## How to extend
-You can add more agents. (See `random-agent` for example.)
+You can add more agents. (See `random-agent.py` for example.)
